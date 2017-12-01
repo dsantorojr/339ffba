@@ -9,7 +9,7 @@ WINS = 0
 LOSSES = 1
 TIES = 2
 
-# league info
+# league info - TODO: make this all command line
 league_id = 650880
 year = 2017
 league = League(league_id, year)
@@ -17,7 +17,7 @@ league = League(league_id, year)
 # TODO -> either (1) find which weeks have been completed, or (2) make this a command line argument
 numWeeks = 12
 
-
+# Class definition
 class Team:
 	scores = []
 	record = []
@@ -48,16 +48,21 @@ class Team:
 			self.averageWinDiff = stats.mean(self.winDifferential[0:numWeeks])
 			self.stdDevWinDiff = stats.stdev(self.winDifferential[0:numWeeks])
 
+# getNextMax - get the team with the max number of wins for a given week. 
+## NOTE: This is only used by setRank and uses the non-existence of a team's rank to ensure
+##	an already ranked team isn't re-ranked
 def getNextMax(teams, week) :
+	# initializaiton
 	maxWins = -1
 	maxTeam = -1
+	
 	for i, team in enumerate(teams) :
-		wins = team.record[week][WINS]
-		if wins > maxWins and team.rank[week] == 0 :
+		if team.record[week][WINS] > maxWins and team.rank[week] == 0 :
 			maxWins = team.record[week][WINS]
 			maxTeam = i
 	return maxTeam
 
+# getTeams - this what's returned from the espnff package and puts it into a local class structure
 def getTeams(league) :
 	teams = []
 	for team in league.teams :
@@ -65,6 +70,7 @@ def getTeams(league) :
 		teams.append(t)
 	return teams
 
+# setRecords - set the power ranking records of every team. TODO: more efficient way to do this.
 def setRecords(teams) :
 	# pick a team
 	for team in teams :
@@ -89,18 +95,7 @@ def setRecords(teams) :
 	return teams
 
 
-
-def plotWinDifferential(teams) :
-	weeks = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
-	plt.figure()
-	for team in teams :
-		plt.plot(weeks, team.winDifferential, '-^', label = team.name)
-	plt.ylabel("Win Differential")
-	plt.xlabel("Week")
-	plt.title("Win Differential Week By Week")
-	plt.legend(loc='upper left', bbox_to_anchor=(1, 1))	
-	plt.show()
-
+# setRank - sets the rank of every team. TODO: more efficient way to do this.
 def setRank(teams) :
 	for week in range(0, numWeeks) :
 		prevMaxTeam = ''
@@ -112,6 +107,7 @@ def setRank(teams) :
 			rank += 1
 	return teams
 
+# sortByRank - all in the name. TODO: more efficient way to do this.
 def sortByRank(teams, week) :
 	sortedTeams = []
 	rank = 1
@@ -124,19 +120,34 @@ def sortByRank(teams, week) :
 		rank+=1
 	return sortedTeams
 
+# setStats - uses inherent class functions to set team stats
 def setStats(teams) :
 	for team in teams :
 		team.setWinDifferential(numWeeks)
 		team.setStats(numWeeks)
 	return teams
 
+# plotWinDifferential - its all in the name
+def plotWinDifferential(teams) :
+	weeks = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+	plt.figure()
+	for team in teams :
+		plt.plot(weeks, team.winDifferential, '-^', label = team.name)
+	plt.ylabel("Win Differential")
+	plt.xlabel("Week")
+	plt.title("Win Differential Week By Week")
+	plt.legend(loc='upper left', bbox_to_anchor=(1, 1))	
+	plt.show()
+
+# RUN THE SCRIPT
 teams = getTeams(league)
 teams = setRecords(teams)
 teams = setRank(teams)
 teams = sortByRank(teams, numWeeks)
 teams = setStats(teams)
-#plotWinDifferential(teams)
+#plotWinDifferential(teams) # TODO: make graph output a command line flag
 
+# PRINT THE RESULTS
 print('NDL POWER RANKINGS THROUGH WEEK ' + str(numWeeks))
 for t in teams :
 	name = t.name
