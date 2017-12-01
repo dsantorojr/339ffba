@@ -11,11 +11,11 @@ TIES = 2
 
 # league info
 league_id = 650880
-year = 2016
+year = 2017
 league = League(league_id, year)
 
 # TODO -> either (1) find which weeks have been completed, or (2) make this a command line argument
-numWeeks = 13
+numWeeks = 12
 
 
 class Team:
@@ -37,8 +37,16 @@ class Team:
 			self.rank.append(0)
 			self.winDifferential.append(0)
 
-	def addScore(self, score, week) :
-		self.scores.append(score)
+	def setWinDifferential(self) :
+		for week in range(0, numWeeks) :
+			if week == 0 :
+				self.winDifferential[week] = self.record[week][WINS]
+			else :
+				self.winDifferential[week] = self.record[week][WINS] - self.record[week-1][WINS]
+
+	def setStats(self) :
+			self.averageWinDiff = stats.mean(self.winDifferential[0:numWeeks])
+			self.stdDevWinDiff = stats.stdev(self.winDifferential[0:numWeeks])
 
 def getNextMax(teams, week) :
 	maxWins = -1
@@ -80,20 +88,7 @@ def setRecords(teams) :
 							team.record[j][TIES] += 1;
 	return teams
 
-def setWinDifferential(teams) :
-	for week in range(0, numWeeks) :
-		for team in teams :
-			if week == 0 :
-				team.winDifferential[week] = team.record[week][WINS]
-			else :
-				team.winDifferential[week] = team.record[week][WINS] - team.record[week-1][WINS]
-	return teams
 
-def setStats(teams) :
-	for team in teams :
-		team.averageWinDiff = stats.mean(team.winDifferential[0:numWeeks])
-		team.stdDevWinDiff = stats.stdev(team.winDifferential[0:numWeeks])
-	return teams
 
 def plotWinDifferential(teams) :
 	weeks = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
@@ -129,9 +124,14 @@ def sortByRank(teams, week) :
 		rank+=1
 	return sortedTeams
 
+def setStats(teams) :
+	for team in teams :
+		team.setWinDifferential()
+		team.setStats()
+	return teams
+
 teams = getTeams(league)
 teams = setRecords(teams)
-teams = setWinDifferential(teams)
 teams = setRank(teams)
 teams = sortByRank(teams, numWeeks)
 teams = setStats(teams)
