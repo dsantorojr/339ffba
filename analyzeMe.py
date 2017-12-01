@@ -37,14 +37,14 @@ class Team:
 			self.rank.append(0)
 			self.winDifferential.append(0)
 
-	def setWinDifferential(self) :
+	def setWinDifferential(self, numWeeks) :
 		for week in range(0, numWeeks) :
 			if week == 0 :
 				self.winDifferential[week] = self.record[week][WINS]
 			else :
 				self.winDifferential[week] = self.record[week][WINS] - self.record[week-1][WINS]
 
-	def setStats(self) :
+	def setStats(self, numWeeks) :
 			self.averageWinDiff = stats.mean(self.winDifferential[0:numWeeks])
 			self.stdDevWinDiff = stats.stdev(self.winDifferential[0:numWeeks])
 
@@ -126,8 +126,8 @@ def sortByRank(teams, week) :
 
 def setStats(teams) :
 	for team in teams :
-		team.setWinDifferential()
-		team.setStats()
+		team.setWinDifferential(numWeeks)
+		team.setStats(numWeeks)
 	return teams
 
 teams = getTeams(league)
