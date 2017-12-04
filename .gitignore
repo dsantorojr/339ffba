@@ -102,3 +102,6 @@ ENV/
 
 # Output Files
 .csv
+
+# System Files
+.DS_Store
