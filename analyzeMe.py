@@ -1,21 +1,23 @@
 # imports
+import sys
+import getopt
 from espnff import League
 from enum import Enum
 import matplotlib.pyplot as plt
 import statistics as stats
 
+
 # constants 
 WINS = 0
 LOSSES = 1
 TIES = 2
+HELP_STRING = '''
+For proper use of this script:
 
-# league info - TODO: make this all command line
-league_id = 650880
-year = 2017
-league = League(league_id, year)
-
-# TODO -> either (1) find which weeks have been completed, or (2) make this a command line argument
-numWeeks = 12
+analyzeMe.py -y <year> -w <week> -v -h
+-v plots visual statistics.
+-h shows this message.
+'''
 
 # Class definition
 class Team:
@@ -71,7 +73,7 @@ def getTeams(league) :
 	return teams
 
 # setRecords - set the power ranking records of every team. TODO: more efficient way to do this.
-def setRecords(teams) :
+def setRecords(teams, numWeeks) :
 	# pick a team
 	for team in teams :
 		# get a team to which to compare
@@ -96,7 +98,7 @@ def setRecords(teams) :
 
 
 # setRank - sets the rank of every team. TODO: more efficient way to do this.
-def setRank(teams) :
+def setRank(teams, numWeeks) :
 	for week in range(0, numWeeks) :
 		prevMaxTeam = ''
 		prevMaxWins = -1
@@ -121,7 +123,7 @@ def sortByRank(teams, week) :
 	return sortedTeams
 
 # setStats - uses inherent class functions to set team stats
-def setStats(teams) :
+def setStats(teams, numWeeks) :
 	for team in teams :
 		team.setWinDifferential(numWeeks)
 		team.setStats(numWeeks)
@@ -139,25 +141,73 @@ def plotWinDifferential(teams) :
 	plt.legend(loc='upper left', bbox_to_anchor=(1, 1))	
 	plt.show()
 
-# RUN THE SCRIPT
-teams = getTeams(league)
-teams = setRecords(teams)
-teams = setRank(teams)
-teams = sortByRank(teams, numWeeks)
-teams = setStats(teams)
-#plotWinDifferential(teams) # TODO: make graph output a command line flag
+def runStats(year, numWeeks, visual) :
+	# league info - TODO: make this all command line
+	league_id = 650880
+	league = League(league_id, year)
 
-# PRINT THE RESULTS
-print('NDL POWER RANKINGS THROUGH WEEK ' + str(numWeeks))
-for t in teams :
-	name = t.name
-	record = t.record[numWeeks-1]
-	rank = str(t.rank[numWeeks-1])
-	toPrint = rank + '. ' + name + ' ->'
-	toPrint += ' ' + str(record[WINS]) + '-' + str(record[LOSSES]) + '-' + str(record[TIES]) + '.'
-	toPrint += ' WDA: ' + str(t.averageWinDiff)[0:4] + ', WDSD: ' + str(t.stdDevWinDiff)[0:4] + '.' 
-	toPrint += ' CM: ' + str(t.averageWinDiff / t.stdDevWinDiff)[0:4] + '.'
-	print(toPrint)
+	# RUN THE SCRIPT
+	teams = getTeams(league)
+	teams = setRecords(teams, numWeeks)
+	teams = setRank(teams, numWeeks)
+	teams = sortByRank(teams, numWeeks)
+	teams = setStats(teams, numWeeks)
+
+	# PRINT THE RESULTS
+	print('NDL POWER RANKINGS THROUGH WEEK ' + str(numWeeks))
+	for t in teams :
+		name = t.name
+		record = t.record[numWeeks-1]
+		rank = str(t.rank[numWeeks-1])
+		toPrint = rank + '. ' + name + ' ->'
+		toPrint += ' ' + str(record[WINS]) + '-' + str(record[LOSSES]) + '-' + str(record[TIES]) + '.'
+		toPrint += ' WDA: ' + str(t.averageWinDiff)[0:4] + ', WDSD: ' + str(t.stdDevWinDiff)[0:4] + '.' 
+		toPrint += ' CM: ' + str(t.averageWinDiff / t.stdDevWinDiff)[0:4] + '.'
+		print(toPrint)
+
+	if visual :
+		plotWinDifferential(teams)
+
+
+def main(argv) :
+	year = 0
+	numWeeks = 0
+	visual = False
+
+	try :
+		opts, args = getopt.getopt(argv, "hy:w:v", ["year=","week="])
+	except :
+			print(HELP_STRING)
+			sys.exit(2)
+
+	if len(opts) >= 2: 
+		for opt, arg in opts :
+			if opt.lower() == '-h' :
+				print(HELP_STRING)
+				sys.exit()
+			elif opt.lower() in ('-y', '--year') :
+				try :
+					year = int(arg)
+				except :
+					print('Invalid year!\n')
+					print(HELP_STRING)
+					sys.exit(2)
+			elif opt.lower() in ('-w', '--week') :
+				try :
+					numWeeks = int(arg)
+				except :
+					print('Invalid week!\n')
+					print(HELP_STRING)
+					sys.exit(2)
+			elif opt.lower() == '-v' :
+				visual = True
+	else :
+		print(HELP_STRING)
+
+	runStats(year, numWeeks, visual)
+
+if __name__ == "__main__":
+   main(sys.argv[1:])
 
 
 
