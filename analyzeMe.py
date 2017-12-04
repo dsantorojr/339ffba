@@ -141,6 +141,22 @@ def plotWinDifferential(teams) :
 	plt.legend(loc='upper left', bbox_to_anchor=(1, 1))	
 	plt.show()
 
+# saveStats - save stats in CSV file
+def saveStats(teams, year, numWeeks) :
+	filename = str(year) + '_Stats_Thru_Week_' + str(numWeeks) + '.csv'
+	f = open(filename, 'w')
+
+	f.write('Team,Wins,Losses,Ties,WDA,WDSD,CM\n')
+	for t in teams :
+		toWrite = t.name + ','
+		toWrite += str(t.record[numWeeks-1][WINS]) + ','
+		toWrite += str(t.record[numWeeks-1][LOSSES]) + ','
+		toWrite += str(t.record[numWeeks-1][TIES]) + ','
+		toWrite += str(t.averageWinDiff)[0:4] + ','
+		toWrite += str(t.stdDevWinDiff)[0:4] + ','
+		toWrite += str(t.averageWinDiff / t.stdDevWinDiff)[0:4] + '\n'
+		f.write(toWrite)
+
 def runStats(year, numWeeks, visual) :
 	# league info - TODO: make this all command line
 	league_id = 650880
@@ -164,6 +180,8 @@ def runStats(year, numWeeks, visual) :
 		toPrint += ' WDA: ' + str(t.averageWinDiff)[0:4] + ', WDSD: ' + str(t.stdDevWinDiff)[0:4] + '.' 
 		toPrint += ' CM: ' + str(t.averageWinDiff / t.stdDevWinDiff)[0:4] + '.'
 		print(toPrint)
+
+	saveStats(teams, year, numWeeks)
 
 	if visual :
 		plotWinDifferential(teams)
