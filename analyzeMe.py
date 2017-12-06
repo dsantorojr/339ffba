@@ -25,8 +25,11 @@ class Team:
 	record = []
 	rank = []
 	winDifferential = []
-	averageWinDiff = 0
+	avgWinDiff = 0
+	normAvgWinDiff = 0
 	stdDevWinDiff = 0
+	normStdDevWinDiff = 0
+
 
 	def __init__(self, name, scores) :
 		self.name = name
@@ -47,8 +50,11 @@ class Team:
 				self.winDifferential[week] = self.record[week][WINS] - self.record[week-1][WINS]
 
 	def setStats(self, numWeeks) :
-			self.averageWinDiff = stats.mean(self.winDifferential[0:numWeeks])
+			gamesPerWeek = (self.record[numWeeks-1][WINS] + self.record[numWeeks-1][LOSSES] + self.record[numWeeks-1][TIES]) / numWeeks
+			self.avgWinDiff = stats.mean(self.winDifferential[0:numWeeks])
 			self.stdDevWinDiff = stats.stdev(self.winDifferential[0:numWeeks])
+			self.normAvgWinDiff = self.avgWinDiff / gamesPerWeek
+			self.normStdDevWinDiff = self.stdDevWinDiff / gamesPerWeek
 
 # getNextMax - get the team with the max number of wins for a given week. 
 ## NOTE: This is only used by setRank and uses the non-existence of a team's rank to ensure
@@ -146,15 +152,18 @@ def saveStats(teams, year, numWeeks) :
 	filename = str(year) + '_Stats_Thru_Week_' + str(numWeeks) + '.csv'
 	f = open(filename, 'w')
 
-	f.write('Team,Wins,Losses,Ties,WDA,WDSD,CM\n')
+	f.write('Year,Team,Wins,Losses,Ties,WDA,WDSD,NWDA,NWDSD,CM\n')
 	for t in teams :
-		toWrite = t.name + ','
+		toWrite = str(year) + ','
+		toWrite += t.name + ','
 		toWrite += str(t.record[numWeeks-1][WINS]) + ','
 		toWrite += str(t.record[numWeeks-1][LOSSES]) + ','
 		toWrite += str(t.record[numWeeks-1][TIES]) + ','
-		toWrite += str(t.averageWinDiff)[0:4] + ','
+		toWrite += str(t.avgWinDiff)[0:4] + ','
 		toWrite += str(t.stdDevWinDiff)[0:4] + ','
-		toWrite += str(t.averageWinDiff / t.stdDevWinDiff)[0:4] + '\n'
+		toWrite += str(t.normAvgWinDiff)[0:5] + ','
+		toWrite += str(t.normStdDevWinDiff)[0:5] + ','
+		toWrite += str(t.normAvgWinDiff / t.normStdDevWinDiff)[0:5] + '\n'
 		f.write(toWrite)
 
 def runStats(year, numWeeks, visual) :
@@ -177,8 +186,8 @@ def runStats(year, numWeeks, visual) :
 		rank = str(t.rank[numWeeks-1])
 		toPrint = rank + '. ' + name + ' ->'
 		toPrint += ' ' + str(record[WINS]) + '-' + str(record[LOSSES]) + '-' + str(record[TIES]) + '.'
-		toPrint += ' WDA: ' + str(t.averageWinDiff)[0:4] + ', WDSD: ' + str(t.stdDevWinDiff)[0:4] + '.' 
-		toPrint += ' CM: ' + str(t.averageWinDiff / t.stdDevWinDiff)[0:4] + '.'
+		toPrint += ' WDA: ' + str(t.avgWinDiff)[0:4] + ', WDSD: ' + str(t.stdDevWinDiff)[0:4] + '.' 
+		toPrint += ' CM: ' + str(t.avgWinDiff / t.stdDevWinDiff)[0:4] + '.'
 		print(toPrint)
 
 	saveStats(teams, year, numWeeks)
