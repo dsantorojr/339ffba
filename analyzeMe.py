@@ -157,9 +157,10 @@ def plotWinDifferential(teams, numWeeks) :
 def saveStats(filename, teams, numWeeks) :
 	f = open(filename, 'w')
 
-	f.write('Year,Team,Wins,Losses,Ties,WDA,WDSD,NWDA,NWDSD,CM\n')
-	for t in teams :
-		toWrite = str(t.year) + ','
+	f.write('Rank,Year,Team,Wins,Losses,Ties,WDA,WDSD,NWDA,NWDSD,CM\n')
+	for i, t in enumerate(teams) :
+		toWrite = str(i+1) + ','
+		toWrite += str(t.year) + ','
 		toWrite += t.name + ','
 		toWrite += str(t.record[-1][WINS]) + ','
 		toWrite += str(t.record[-1][LOSSES]) + ','
@@ -226,8 +227,8 @@ def runAll(numWeeks) :
 		print(toPrint)
 
 	# SAVE IT OUT
-	filename = 'All_Time_Stats_Thru_Week_' + str(numWeeks)
-	saveStats(filename, teams, numWeeks)
+	filename = 'All_Time_Stats_Thru_Week_' + str(numWeeks) + '.csv'
+	saveStats(filename, allTeams, numWeeks)
 
 def main(argv) :
 	year = 0
