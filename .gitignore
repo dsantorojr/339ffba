@@ -101,7 +101,7 @@ ENV/
 .mypy_cache/
 
 # Output Files
-.csv
+*.csv
 
 # System Files
 .DS_Store

@@ -19,6 +19,8 @@ analyzeMe.py -y <year> -w <week> -v -h
 -h shows this message.
 '''
 
+LEAGUE_ID = 650880
+
 # Class definition
 class Team:
 	scores = []
@@ -29,15 +31,17 @@ class Team:
 	normAvgWinDiff = 0
 	stdDevWinDiff = 0
 	normStdDevWinDiff = 0
+	year = 0
 
 
-	def __init__(self, name, scores) :
+	def __init__(self, name, scores, numWeeks, year) :
 		self.name = name
 		self.scores = scores
 		self.record = []
 		self.rank = []
 		self.winDifferential = []
-		for i in range(0, len(self.scores)) :
+		self.year = year
+		for i in range(0, numWeeks) :
 			self.record.append([0,0,0])
 			self.rank.append(0)
 			self.winDifferential.append(0)
@@ -71,10 +75,10 @@ def getNextMax(teams, week) :
 	return maxTeam
 
 # getTeams - this what's returned from the espnff package and puts it into a local class structure
-def getTeams(league) :
+def getTeams(league, numWeeks, year) :
 	teams = []
 	for team in league.teams :
-		t = Team(team.team_name, team.scores)
+		t = Team(team.team_name, team.scores, numWeeks, year)
 		teams.append(t)
 	return teams
 
@@ -115,17 +119,18 @@ def setRank(teams, numWeeks) :
 			rank += 1
 	return teams
 
-# sortByRank - all in the name. TODO: more efficient way to do this.
-def sortByRank(teams, week) :
+# sortByNormAvgWinDiff - all in the name. TODO: more efficient way to do this.
+def sortByNormAvgWinDiff(teams) :
 	sortedTeams = []
-	rank = 1
+	maxTeamIndex = 0
 	while len(teams) > 0 :
-		i = 0
-		while teams[i].rank[week-1] != rank :
-			i += 1
-		sortedTeams.append(teams[i])
-		teams = teams[:i] + teams[i+1:]
-		rank+=1
+		maxNormAvgWinDiff = 0
+		for i, team in enumerate(teams) :
+			if team.normAvgWinDiff > maxNormAvgWinDiff :
+				maxNormAvgWinDiff = team.normAvgWinDiff
+				maxTeamIndex = i
+		sortedTeams.append(teams[maxTeamIndex])
+		teams = teams[:maxTeamIndex] + teams[maxTeamIndex+1:]
 	return sortedTeams
 
 # setStats - uses inherent class functions to set team stats
@@ -136,11 +141,12 @@ def setStats(teams, numWeeks) :
 	return teams
 
 # plotWinDifferential - its all in the name
-def plotWinDifferential(teams) :
+def plotWinDifferential(teams, numWeeks) :
 	weeks = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
 	plt.figure()
 	for team in teams :
-		plt.plot(weeks, team.winDifferential, '-^', label = team.name)
+		if 'Erd' not in team.name and 'Dux' not in team.name and 'Kom' not in team.name and 'Huge' not in team.name :
+			plt.plot(weeks, team.winDifferential, '-^', label = team.name)
 	plt.ylabel("Win Differential")
 	plt.xlabel("Week")
 	plt.title("Win Differential Week By Week")
@@ -148,17 +154,16 @@ def plotWinDifferential(teams) :
 	plt.show()
 
 # saveStats - save stats in CSV file
-def saveStats(teams, year, numWeeks) :
-	filename = str(year) + '_Stats_Thru_Week_' + str(numWeeks) + '.csv'
+def saveStats(filename, teams, numWeeks) :
 	f = open(filename, 'w')
 
 	f.write('Year,Team,Wins,Losses,Ties,WDA,WDSD,NWDA,NWDSD,CM\n')
 	for t in teams :
-		toWrite = str(year) + ','
+		toWrite = str(t.year) + ','
 		toWrite += t.name + ','
-		toWrite += str(t.record[numWeeks-1][WINS]) + ','
-		toWrite += str(t.record[numWeeks-1][LOSSES]) + ','
-		toWrite += str(t.record[numWeeks-1][TIES]) + ','
+		toWrite += str(t.record[-1][WINS]) + ','
+		toWrite += str(t.record[-1][LOSSES]) + ','
+		toWrite += str(t.record[-1][TIES]) + ','
 		toWrite += str(t.avgWinDiff)[0:4] + ','
 		toWrite += str(t.stdDevWinDiff)[0:4] + ','
 		toWrite += str(t.normAvgWinDiff)[0:5] + ','
@@ -166,43 +171,72 @@ def saveStats(teams, year, numWeeks) :
 		toWrite += str(t.normAvgWinDiff / t.normStdDevWinDiff)[0:5] + '\n'
 		f.write(toWrite)
 
-def runStats(year, numWeeks, visual) :
-	# league info - TODO: make this all command line
-	league_id = 650880
-	league = League(league_id, year)
+def runStats(year, numWeeks, visual, verbose) :
+	league = League(LEAGUE_ID, year)
 
 	# RUN THE SCRIPT
-	teams = getTeams(league)
+	teams = getTeams(league, numWeeks, year)
 	teams = setRecords(teams, numWeeks)
 	teams = setRank(teams, numWeeks)
-	teams = sortByRank(teams, numWeeks)
 	teams = setStats(teams, numWeeks)
+	teams = sortByNormAvgWinDiff(teams)
+
+	if verbose :
+		# PRINT THE RESULTS
+		print('NDL POWER RANKINGS THROUGH WEEK ' + str(numWeeks))
+		for t in teams :
+			name = t.name
+			record = t.record[numWeeks-1]
+			rank = str(t.rank[numWeeks-1])
+			toPrint = rank + '. ' + name + ' ->'
+			toPrint += ' ' + str(record[WINS]) + '-' + str(record[LOSSES]) + '-' + str(record[TIES]) + '.'
+			toPrint += ' WDA: ' + str(t.avgWinDiff)[0:4] + ', WDSD: ' + str(t.stdDevWinDiff)[0:4] + '.' 
+			toPrint += ' CM: ' + str(t.avgWinDiff / t.stdDevWinDiff)[0:4] + '.'
+			print(toPrint)
+
+	# SAVE IT OUT
+	filename = str(year) + '_Stats_Thru_Week_' + str(numWeeks) + '.csv'
+	saveStats(filename, teams, numWeeks)
+
+	if visual :
+		plotWinDifferential(teams, numWeeks)
+
+	return teams
+
+def runAll(numWeeks) :
+	allTeams = []
+
+	# run all the years
+	for year in range(2011, 2018) :
+		league = League(LEAGUE_ID, year)
+		teams = runStats(year, numWeeks, False, False)
+		allTeams += teams
+
+	allTeams = sortByNormAvgWinDiff(allTeams)
 
 	# PRINT THE RESULTS
 	print('NDL POWER RANKINGS THROUGH WEEK ' + str(numWeeks))
-	for t in teams :
+	for i, t in enumerate(allTeams) :
 		name = t.name
 		record = t.record[numWeeks-1]
-		rank = str(t.rank[numWeeks-1])
-		toPrint = rank + '. ' + name + ' ->'
+		toPrint = str(i+1) + '. ' + str(t.year) + ' ' + t.name + ' ->'
 		toPrint += ' ' + str(record[WINS]) + '-' + str(record[LOSSES]) + '-' + str(record[TIES]) + '.'
 		toPrint += ' WDA: ' + str(t.avgWinDiff)[0:4] + ', WDSD: ' + str(t.stdDevWinDiff)[0:4] + '.' 
 		toPrint += ' CM: ' + str(t.avgWinDiff / t.stdDevWinDiff)[0:4] + '.'
 		print(toPrint)
 
-	saveStats(teams, year, numWeeks)
-
-	if visual :
-		plotWinDifferential(teams)
-
+	# SAVE IT OUT
+	filename = 'All_Time_Stats_Thru_Week_' + str(numWeeks)
+	saveStats(filename, teams, numWeeks)
 
 def main(argv) :
 	year = 0
 	numWeeks = 0
 	visual = False
+	analyzeAll = False
 
 	try :
-		opts, args = getopt.getopt(argv, "hy:w:v", ["year=","week="])
+		opts, args = getopt.getopt(argv, "hy:w:va", ["year=","week="])
 	except :
 			print(HELP_STRING)
 			sys.exit(2)
@@ -228,10 +262,15 @@ def main(argv) :
 					sys.exit(2)
 			elif opt.lower() == '-v' :
 				visual = True
+			elif opt.lower() == '-a' :
+				analyzeAll = True
 	else :
 		print(HELP_STRING)
 
-	runStats(year, numWeeks, visual)
+	if analyzeAll :
+		runAll(numWeeks)
+	else :
+		runStats(year, numWeeks, visual, True)
 
 if __name__ == "__main__":
    main(sys.argv[1:])
